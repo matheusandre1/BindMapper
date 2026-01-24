@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\..\assets\icon.png" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\VelocityMapper.Abstractions\VelocityMapper.Abstractions.csproj" />
   </ItemGroup>
 
