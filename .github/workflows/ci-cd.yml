@@ -12,8 +12,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.2.0)'
-        required: true
+        description: 'Version to release (e.g., 1.2.0) - leave empty to auto-detect from CHANGELOG'
+        required: false
         type: string
 
 env:
@@ -21,8 +21,38 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
+  # Detect version from CHANGELOG.md
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_release: ${{ steps.version.outputs.should_release }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Get version from CHANGELOG
+      id: version
+      run: |
+        # Extract latest version from CHANGELOG.md
+        VERSION=$(grep -oP '## \[\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1)
+        echo "Detected version: $VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+        # Check if tag already exists
+        if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+          echo "Tag v$VERSION already exists"
+          echo "should_release=false" >> $GITHUB_OUTPUT
+        else
+          echo "Tag v$VERSION does not exist - will create release"
+          echo "should_release=true" >> $GITHUB_OUTPUT
+        fi
+
   build:
     runs-on: ${{ matrix.os }}
+    needs: detect-version
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -40,7 +70,7 @@ jobs:
       run: dotnet restore
     
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build --no-restore --configuration Release /p:Version=${{ needs.detect-version.outputs.version }}
     
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
@@ -68,27 +98,24 @@ jobs:
         name: benchmark-results
         path: tests/VelocityMapper.Benchmarks/BenchmarkDotNet.Artifacts/**/*
 
-  # Create GitHub Release with tag when manually triggered
+  # Auto-create GitHub Release when version changes
   create-release:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'workflow_dispatch'
-    outputs:
-      version: ${{ steps.version.outputs.version }}
+    needs: [detect-version, build]
+    if: |
+      github.ref == 'refs/heads/main' && 
+      github.event_name == 'push' && 
+      needs.detect-version.outputs.should_release == 'true'
     
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
-    - name: Set version
-      id: version
-      run: echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-    
     - name: Extract release notes from CHANGELOG
       id: changelog
       run: |
-        VERSION="${{ github.event.inputs.version }}"
+        VERSION="${{ needs.detect-version.outputs.version }}"
         # Extract the section for this version from CHANGELOG.md
         NOTES=$(awk "/## \[${VERSION}\]/{flag=1; next} /## \[/{flag=0} flag" CHANGELOG.md)
         echo "notes<<EOF" >> $GITHUB_OUTPUT
@@ -99,14 +126,14 @@ jobs:
       run: |
         git config user.name github-actions
         git config user.email github-actions@github.com
-        git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
-        git push origin "v${{ github.event.inputs.version }}"
+        git tag -a "v${{ needs.detect-version.outputs.version }}" -m "Release v${{ needs.detect-version.outputs.version }}"
+        git push origin "v${{ needs.detect-version.outputs.version }}"
     
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ github.event.inputs.version }}
-        name: VelocityMapper v${{ github.event.inputs.version }}
+        tag_name: v${{ needs.detect-version.outputs.version }}
+        name: VelocityMapper v${{ needs.detect-version.outputs.version }}
         body: ${{ steps.changelog.outputs.notes }}
         draft: false
         prerelease: false
@@ -115,8 +142,15 @@ jobs:
 
   pack:
     runs-on: ubuntu-latest
-    needs: [build, create-release]
-    if: always() && (github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
+    needs: [detect-version, build, create-release]
+    if: |
+      always() && 
+      needs.build.result == 'success' &&
+      (
+        github.event_name == 'release' || 
+        startsWith(github.ref, 'refs/tags/v') || 
+        (github.ref == 'refs/heads/main' && needs.detect-version.outputs.should_release == 'true')
+      )
     
     steps:
     - uses: actions/checkout@v4
@@ -126,17 +160,8 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
-    - name: Get version from tag or input
-      id: version
-      run: |
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-        else
-          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-        fi
-    
     - name: Pack with version
-      run: dotnet pack --configuration Release --output ./artifacts /p:Version=${{ steps.version.outputs.version }}
+      run: dotnet pack --configuration Release --output ./artifacts /p:Version=${{ needs.detect-version.outputs.version }}
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -146,5 +171,4 @@ jobs:
     
     - name: Push to NuGet
       run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-      if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
