@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="VelocityMapper Logo" width="300">
+  <img src="assets/icon.png" alt="VelocityMapper Logo" width="300">
 </p>
 
 # ⚡ VelocityMapper
