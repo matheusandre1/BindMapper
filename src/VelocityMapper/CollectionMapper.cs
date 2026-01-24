@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,13 +8,11 @@ namespace VelocityMapper;
 /// </summary>
 public static class CollectionMapper
 {
-    private const int PoolingThreshold = 1024;
-
     /// <summary>
     /// Maps a list to another list using a provided mapping function.
     /// Optimized for performance using Span&lt;T&gt; and CollectionsMarshal.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static List<TDestination> MapList<TSource, TDestination>(
         List<TSource>? source,
         Func<TSource, TDestination> mapper)
@@ -54,7 +51,7 @@ public static class CollectionMapper
     /// Maps an array to another array using a provided mapping function.
     /// Optimized for performance using Span&lt;T&gt; internally.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static TDestination[] MapArray<TSource, TDestination>(
         TSource[]? source,
         Func<TSource, TDestination> mapper)
@@ -80,6 +77,7 @@ public static class CollectionMapper
     /// Maps an enumerable to a list using a provided mapping function.
     /// Optimized based on source type.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static List<TDestination> MapEnumerable<TSource, TDestination>(
         IEnumerable<TSource>? source,
         Func<TSource, TDestination> mapper)
@@ -122,22 +120,35 @@ public static class CollectionMapper
         if (source is ICollection<TSource> collection)
             return MapToList(collection, mapper);
 
-        // Slow path for IEnumerable
-        var destination = new List<TDestination>();
+#if NET6_0_OR_GREATER
+        // Try to get count without enumeration for pre-allocation
+        if (System.Linq.Enumerable.TryGetNonEnumeratedCount(source, out var estimatedCount))
+        {
+            var destination = new List<TDestination>(estimatedCount);
+            foreach (var item in source)
+            {
+                destination.Add(mapper(item));
+            }
+            return destination;
+        }
+#endif
+
+        // Slow path for IEnumerable - start with reasonable capacity
+        var result = new List<TDestination>(16);
 
         foreach (var item in source)
         {
-            destination.Add(mapper(item));
+            result.Add(mapper(item));
         }
 
-        return destination;
+        return result;
     }
 
     /// <summary>
     /// Maps a read-only span to an array using a mapping function.
     /// Maximum performance for span-based operations.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static TDestination[] MapSpan<TSource, TDestination>(
         ReadOnlySpan<TSource> source,
         Func<TSource, TDestination> mapper)
@@ -160,7 +171,7 @@ public static class CollectionMapper
     /// Maps a collection to a list using a provided mapping function.
     /// Optimized for ICollection&lt;T&gt; to avoid enumerator overhead.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static List<TDestination> MapToList<TSource, TDestination>(
         ICollection<TSource> source,
         Func<TSource, TDestination> mapper)
@@ -192,7 +203,7 @@ public static class CollectionMapper
     /// Maps a collection to an array using a provided mapping function.
     /// Optimized for ICollection&lt;T&gt; to avoid intermediate lists.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static TDestination[] MapToArray<TSource, TDestination>(
         ICollection<TSource> source,
         Func<TSource, TDestination> mapper)
@@ -208,48 +219,5 @@ public static class CollectionMapper
         }
 
         return destination;
-    }
-
-    /// <summary>
-    /// Maps a collection to a pooled array for large workloads.
-    /// Caller must return the array via ReturnPooledArray.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TDestination[] MapToPooledArray<TSource, TDestination>(
-        ICollection<TSource> source,
-        Func<TSource, TDestination> mapper,
-        out int length)
-    {
-        length = source.Count;
-        if (length == 0)
-            return Array.Empty<TDestination>();
-
-        if (length < PoolingThreshold)
-        {
-            return MapToArray(source, mapper);
-        }
-
-        var pool = ArrayPool<TDestination>.Shared;
-        var destination = pool.Rent(length);
-        var i = 0;
-
-        foreach (var item in source)
-        {
-            destination[i++] = mapper(item);
-        }
-
-        return destination;
-    }
-
-    /// <summary>
-    /// Returns a pooled array rented via MapToPooledArray.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ReturnPooledArray<TDestination>(TDestination[]? array, bool clearArray = false)
-    {
-        if (array is null || array.Length == 0)
-            return;
-
-        ArrayPool<TDestination>.Shared.Return(array, clearArray);
     }
 }
