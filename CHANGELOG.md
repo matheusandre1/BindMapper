@@ -2,11 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2026-01-24
+## [1.0.1] - 2026-01-24
+
+### Fixed
+
+- Fixed parallel build conflicts in CI/CD with `GenerateDependencyFile=false`
+- Integrated Generator into single NuGet package (no separate VelocityMapper.Generators package)
+- Generator now uses `GlobalPropertiesToRemove` to prevent rebuilding for each target framework
 
 ### Changed
 
-- **Breaking Change**: Renamed `Mapper` class to `Velocity` for a cleaner and more concise API.
+- Renamed `Mapper` class to `Velocity` for a cleaner and more concise API.
 
 #### Migration Guide
 
