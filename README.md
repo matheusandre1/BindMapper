@@ -56,8 +56,8 @@ public static class MappingConfig
     [MapperConfiguration]
     public static void Configure()
     {
-        Mapper.CreateMap<User, UserDto>();
-        Mapper.CreateMap<Address, AddressDto>();
+        VelocityMap.CreateMap<User, UserDto>();
+        VelocityMap.CreateMap<Address, AddressDto>();
     }
 }
 ```
@@ -68,14 +68,14 @@ public static class MappingConfig
 var user = new User { Id = 1, Name = "João", Email = "joao@email.com" };
 
 // Criar nova instância
-var dto = Mapper.Map<UserDto>(user);
+var dto = VelocityMap.Map<UserDto>(user);
 
 // Ou com tipo inferido
-UserDto dto2 = Mapper.Map(user);
+UserDto dto2 = VelocityMap.Map(user);
 
 // Zero allocation - mapear para objeto existente
 var existingDto = new UserDto();
-Mapper.Map(user, existingDto);
+VelocityMap.Map(user, existingDto);
 ```
 
 ---
@@ -86,29 +86,29 @@ Mapper.Map(user, existingDto);
 
 ```csharp
 // Nova instância (estilo AutoMapper)
-var dto = Mapper.Map<UserDto>(user);
+var dto = VelocityMap.Map<UserDto>(user);
 
 // Nova instância (tipo inferido - mais rápido)
-UserDto dto = Mapper.Map(user);
+UserDto dto = VelocityMap.Map(user);
 
 // Para objeto existente (zero allocation)
-Mapper.Map(user, existingDto);
+VelocityMap.Map(user, existingDto);
 ```
 
 ### Mapeamento de Coleções
 
 ```csharp
 // Lista
-List<UserDto> dtos = Mapper.MapList(users);
+List<UserDto> dtos = VelocityMap.MapList(users);
 
 // Array
-UserDto[] array = Mapper.MapArray(usersArray);
+UserDto[] array = VelocityMap.MapArray(usersArray);
 
 // Span (máxima performance)
-UserDto[] result = Mapper.MapSpan(usersSpan);
+UserDto[] result = VelocityMap.MapSpan(usersSpan);
 
 // Zero allocation com Span
-Mapper.MapSpanTo(sourceSpan, destinationSpan);
+VelocityMap.MapSpanTo(sourceSpan, destinationSpan);
 ```
 
 ---
@@ -121,7 +121,7 @@ Mapper.MapSpanTo(sourceSpan, destinationSpan);
 [MapperConfiguration]
 public static void Configure()
 {
-    Mapper.CreateMap<User, UserDto>()
+    VelocityMap.CreateMap<User, UserDto>()
         .ForMember(d => d.FullName, opt => opt.MapFrom(s => s.FirstName + " " + s.LastName))
         .ForMember(d => d.InternalCode, opt => opt.Ignore())
         .ReverseMap();
@@ -167,7 +167,7 @@ O Source Generator analisa seu código em tempo de compilação e gera métodos 
 
 ```csharp
 // Você escreve:
-Mapper.CreateMap<User, UserDto>();
+VelocityMap.CreateMap<User, UserDto>();
 
 // O gerador cria:
 public static UserDto Map(User source)
@@ -189,12 +189,12 @@ public static UserDto Map(User source)
 
 | Método | Uso | Allocation |
 |--------|-----|------------|
-| `Mapper.Map<TDest>(source)` | Nova instância | DTO size |
-| `Mapper.Map(source)` | Nova instância (inferido) | DTO size |
-| `Mapper.Map(source, dest)` | Objeto existente | 0 B |
-| `Mapper.MapList(list)` | Lista → Lista | List + DTOs |
-| `Mapper.MapArray(array)` | Array → Array | Array + DTOs |
-| `Mapper.MapSpanTo(src, dest)` | Span → Span | 0 B |
+| `VelocityMap.Map<TDest>(source)` | Nova instância | DTO size |
+| `VelocityMap.Map(source)` | Nova instância (inferido) | DTO size |
+| `VelocityMap.Map(source, dest)` | Objeto existente | 0 B |
+| `VelocityMap.MapList(list)` | Lista → Lista | List + DTOs |
+| `VelocityMap.MapArray(array)` | Array → Array | Array + DTOs |
+| `VelocityMap.MapSpanTo(src, dest)` | Span → Span | 0 B |
 
 ---
 

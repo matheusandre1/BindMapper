@@ -10,13 +10,13 @@ namespace VelocityMapper;
 /// <para>Usage:</para>
 /// <code>
 /// // Create new instance (12.03 ns - faster than manual code!)
-/// var dto = Mapper.Map&lt;UserDto&gt;(user);
+/// var dto = VelocityMap.Map&lt;UserDto&gt;(user);
 /// 
 /// // Map to existing object (zero allocation)
-/// Mapper.Map(user, existingDto);
+/// VelocityMap.Map(user, existingDto);
 /// </code>
 /// </remarks>
-public static partial class Mapper
+public static partial class VelocityMap
 {
     /// <summary>
     /// Maps source to a new TDestination instance.
@@ -44,6 +44,6 @@ public static partial class Mapper
     {
         throw new InvalidOperationException(
             $"No mapping configured from '{sourceType?.FullName ?? "null"}' to '{destinationType.FullName}'. " +
-            $"Add Mapper.CreateMap<{sourceType?.Name}, {destinationType.Name}>() in [MapperConfiguration] method.");
+            $"Add VelocityMap.CreateMap<{sourceType?.Name}, {destinationType.Name}>() in [MapperConfiguration] method.");
     }
 }

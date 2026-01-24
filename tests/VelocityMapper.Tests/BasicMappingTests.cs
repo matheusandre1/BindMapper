@@ -27,7 +27,7 @@ public class BasicMappingTests
         };
 
         // Act
-        var result = Mapper.Map<SimpleDestination>(source);
+        var result = VelocityMap.Map<SimpleDestination>(source);
 
         // Assert
         result.Should().NotBeNull();
@@ -52,7 +52,7 @@ public class BasicMappingTests
         };
 
         // Act
-        var result = Mapper.Map<PersonDto>(person);
+        var result = VelocityMap.Map<PersonDto>(person);
 
         // Assert
         result.Should().NotBeNull();
@@ -77,7 +77,7 @@ public class BasicMappingTests
         };
 
         // Act
-        var result = Mapper.Map<PersonDto>(person);
+        var result = VelocityMap.Map<PersonDto>(person);
 
         // Assert
         result.Should().NotBeNull();
@@ -105,7 +105,7 @@ public class BasicMappingTests
         };
 
         // Act
-        Mapper.Map(source, existing);
+        VelocityMap.Map(source, existing);
 
         // Assert
         existing.Value.Should().Be(100);
@@ -126,7 +126,7 @@ public class BasicMappingTests
         };
 
         // Act
-        var result = Mapper.Map<PersonDto>(person);
+        var result = VelocityMap.Map<PersonDto>(person);
 
         // Assert
         result.Should().BeOfType<PersonDto>();

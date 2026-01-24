@@ -27,7 +27,7 @@ public class AttributeMappingTests
         };
 
         // Act
-        var result = Mapper.Map<UserWithAttributesDto>(user);
+        var result = VelocityMap.Map<UserWithAttributesDto>(user);
 
         // Assert
         result.Should().NotBeNull();
@@ -49,7 +49,7 @@ public class AttributeMappingTests
         };
 
         // Act
-        var result = Mapper.Map<UserWithAttributesDto>(user);
+        var result = VelocityMap.Map<UserWithAttributesDto>(user);
 
         // Assert
         result.Should().NotBeNull();
@@ -77,7 +77,7 @@ public class AttributeMappingTests
         };
 
         // Act
-        Mapper.Map(user, existing);
+        VelocityMap.Map(user, existing);
 
         // Assert
         existing.Id.Should().Be(2);
