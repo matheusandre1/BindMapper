@@ -9,6 +9,12 @@ on:
     branches: [ main, develop ]
   release:
     types: [ published ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.0)'
+        required: true
+        type: string
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
@@ -35,6 +41,9 @@ jobs:
     
     - name: Build
       run: dotnet build --no-restore --configuration Release
+    
+    - name: Test
+      run: dotnet test --no-build --configuration Release --verbosity normal
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -59,10 +68,55 @@ jobs:
         name: benchmark-results
         path: tests/VelocityMapper.Benchmarks/BenchmarkDotNet.Artifacts/**/*
 
-  pack:
+  # Create GitHub Release with tag when manually triggered
+  create-release:
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set version
+      id: version
+      run: echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+    
+    - name: Extract release notes from CHANGELOG
+      id: changelog
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        # Extract the section for this version from CHANGELOG.md
+        NOTES=$(awk "/## \[${VERSION}\]/{flag=1; next} /## \[/{flag=0} flag" CHANGELOG.md)
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Create and push tag
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
+        git push origin "v${{ github.event.inputs.version }}"
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        name: VelocityMapper v${{ github.event.inputs.version }}
+        body: ${{ steps.changelog.outputs.notes }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pack:
+    runs-on: ubuntu-latest
+    needs: [build, create-release]
+    if: always() && (github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
     
     steps:
     - uses: actions/checkout@v4
@@ -72,8 +126,17 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
-    - name: Pack
-      run: dotnet pack --configuration Release --output ./artifacts
+    - name: Get version from tag or input
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Pack with version
+      run: dotnet pack --configuration Release --output ./artifacts /p:Version=${{ steps.version.outputs.version }}
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -83,5 +146,5 @@ jobs:
     
     - name: Push to NuGet
       run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-      if: github.event_name == 'release'
+      if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
