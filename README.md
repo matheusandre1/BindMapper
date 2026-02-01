@@ -187,34 +187,6 @@ Benchmark no .NET 10 (Intel Core i5-14600KF):
 
 VelocityMapper é mais rápido que código escrito à mão.
 
-### Por que classe estática?
-
-A classe `Velocity` é estática por design para **máxima performance**:
-
-| Aspecto | Classe Estática | Interface |
-|---------|-----------------|-----------|
-| Inlining JIT | ✅ Agressivo | ❌ Chamada virtual impede |
-| Overhead | ~0 ns | ~2-3 ns por chamada |
-| Testabilidade | ⚠️ Requer wrapper | ✅ Fácil mock |
-
-Se precisar de DI/testabilidade, crie um wrapper:
-
-```csharp
-public interface IMapper
-{
-    TDestination Map<TDestination>(object source);
-}
-
-public class VelocityMapperWrapper : IMapper
-{
-    public TDestination Map<TDestination>(object source) 
-        => Velocity.Map<TDestination>(source);
-}
-
-// DI
-services.AddSingleton<IMapper, VelocityMapperWrapper>();
-```
-
 ---
 
 ## 🔧 Como Funciona
