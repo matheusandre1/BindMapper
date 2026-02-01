@@ -1,13 +1,10 @@
-<p align="center">
-  <img src="assets/icon.png" alt="VelocityMapper Logo" width="200">
-</p>
-
 # VelocityMapper
 
 **O mapper .NET mais rápido. Zero reflection. Zero overhead.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![NuGet](https://img.shields.io/nuget/v/VelocityMapper.svg)](https://www.nuget.org/packages/VelocityMapper/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/VelocityMapper.svg)](https://www.nuget.org/packages/VelocityMapper/)
 [![.NET](https://img.shields.io/badge/.NET-6%20%7C%208%20%7C%209%20%7C%2010-512BD4)](https://dotnet.microsoft.com/)
 
 VelocityMapper usa **Source Generators** para gerar código de mapeamento otimizado em tempo de compilação. API familiar estilo AutoMapper, performance superior.
@@ -104,6 +101,14 @@ List<UserDto> dtos = Velocity.MapList(users);
 // Array
 UserDto[] array = Velocity.MapArray(usersArray);
 
+// ICollection<T>
+ICollection<User> users = GetUsers();
+List<UserDto> dtos = CollectionMapper.MapToList(users, Velocity.Map<UserDto>);
+UserDto[] array = CollectionMapper.MapToArray(users, Velocity.Map<UserDto>);
+
+// IEnumerable<T> (detecta automaticamente List, Array ou ICollection)
+List<UserDto> dtos = CollectionMapper.MapEnumerable(users, Velocity.Map<UserDto>);
+
 // Span (máxima performance)
 UserDto[] result = Velocity.MapSpan(usersSpan);
 
@@ -113,20 +118,39 @@ Velocity.MapSpanTo(sourceSpan, destinationSpan);
 
 ---
 
-## ⚙️ Configuração Avançada
+## 🔄 Comportamento de Mapeamento
 
-### Fluent API
+### Propriedades Extras são Ignoradas Automaticamente
+
+O VelocityMapper mapeia baseado nas **propriedades do destino**. Propriedades que existem apenas na origem são automaticamente ignoradas:
 
 ```csharp
-[MapperConfiguration]
-public static void Configure()
+public class User
 {
-    Velocity.CreateMap<User, UserDto>()
-        .ForMember(d => d.FullName, opt => opt.MapFrom(s => s.FirstName + " " + s.LastName))
-        .ForMember(d => d.InternalCode, opt => opt.Ignore())
-        .ReverseMap();
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public string PasswordHash { get; set; }  // Só existe na entidade
 }
+
+public class UserDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+    // PasswordHash não existe → ignorado automaticamente!
+}
+
+var dto = Velocity.Map<UserDto>(user);
+// dto terá: Id, Name, Email
+// PasswordHash é ignorado silenciosamente ✓
 ```
+
+| Cenário | Comportamento |
+|---------|---------------|
+| Propriedade existe em ambos | ✅ Mapeia |
+| Propriedade só na origem | ✅ Ignora silenciosamente |
+| Propriedade só no destino | ✅ Mantém valor padrão |
 
 ### Atributos
 
@@ -135,10 +159,10 @@ public class UserDto
 {
     public int Id { get; set; }
     
-    [MapFrom("FirstName")]  // Mapeia de propriedade diferente
+    [MapFrom("FirstName")]  // Mapeia de propriedade com nome diferente
     public string Name { get; set; }
     
-    [IgnoreMap]  // Ignora no mapeamento
+    [IgnoreMap]  // Ignora explicitamente (documentação)
     public string CacheKey { get; set; }
 }
 ```
@@ -158,6 +182,34 @@ Benchmark no .NET 10 (Intel Core i5-14600KF):
 | AutoMapper | 32.87 ns | 173% mais lento |
 
 VelocityMapper é mais rápido que código escrito à mão.
+
+### Por que classe estática?
+
+A classe `Velocity` é estática por design para **máxima performance**:
+
+| Aspecto | Classe Estática | Interface |
+|---------|-----------------|-----------|
+| Inlining JIT | ✅ Agressivo | ❌ Chamada virtual impede |
+| Overhead | ~0 ns | ~2-3 ns por chamada |
+| Testabilidade | ⚠️ Requer wrapper | ✅ Fácil mock |
+
+Se precisar de DI/testabilidade, crie um wrapper:
+
+```csharp
+public interface IMapper
+{
+    TDestination Map<TDestination>(object source);
+}
+
+public class VelocityMapperWrapper : IMapper
+{
+    public TDestination Map<TDestination>(object source) 
+        => Velocity.Map<TDestination>(source);
+}
+
+// DI
+services.AddSingleton<IMapper, VelocityMapperWrapper>();
+```
 
 ---
 
@@ -194,6 +246,9 @@ public static UserDto Map(User source)
 | `Velocity.Map(source, dest)` | Objeto existente | 0 B |
 | `Velocity.MapList(list)` | Lista → Lista | List + DTOs |
 | `Velocity.MapArray(array)` | Array → Array | Array + DTOs |
+| `CollectionMapper.MapToList(collection, mapper)` | ICollection → Lista | List + DTOs |
+| `CollectionMapper.MapToArray(collection, mapper)` | ICollection → Array | Array + DTOs |
+| `CollectionMapper.MapEnumerable(enumerable, mapper)` | IEnumerable → Lista | List + DTOs |
 | `Velocity.MapSpanTo(src, dest)` | Span → Span | 0 B |
 
 ---
