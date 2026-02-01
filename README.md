@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/djesusnet/VelocityMapper/main/assets/icon.png" alt="VelocityMapper Logo" width="120">
+</p>
+
 # VelocityMapper
 
 **O mapper .NET mais rápido. Zero reflection. Zero overhead.**
