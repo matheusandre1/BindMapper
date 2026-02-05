@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 namespace VelocityMapper;
 
 /// <summary>
-/// High-performance mapper configuration API.
+/// High-performance mapper configuration and setup API.
 /// Use this to configure mappings between types.
 /// </summary>
 /// <remarks>
@@ -12,12 +12,12 @@ namespace VelocityMapper;
 /// [MapperConfiguration]
 /// public static void Configure()
 /// {
-///     Configuration.CreateMap&lt;User, UserDto&gt;();
-///     Configuration.CreateMap&lt;Product, ProductDto&gt;();
+///     MapperSetup.CreateMap&lt;User, UserDto&gt;();
+///     MapperSetup.CreateMap&lt;Product, ProductDto&gt;();
 /// }
 /// </code>
 /// </remarks>
-public static class Configuration
+public static class MapperSetup
 {
     /// <summary>
     /// Creates a mapping configuration for the Source Generator to analyze.

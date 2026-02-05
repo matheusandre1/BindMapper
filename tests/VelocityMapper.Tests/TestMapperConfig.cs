@@ -26,17 +26,17 @@ public static class TestMapperConfig
     public static void Configure()
     {
         // Basic mappings
-        Configuration.CreateMap<Person, PersonDto>();
-        Configuration.CreateMap<Address, AddressDto>();
+        MapperSetup.CreateMap<Person, PersonDto>();
+        MapperSetup.CreateMap<Address, AddressDto>();
         
         // Nested object mappings
-        Configuration.CreateMap<Order, OrderDto>();
-        Configuration.CreateMap<Customer, CustomerDto>();
+        MapperSetup.CreateMap<Order, OrderDto>();
+        MapperSetup.CreateMap<Customer, CustomerDto>();
         
         // Mapping with attributes
-        Configuration.CreateMap<UserWithAttributes, UserWithAttributesDto>();
+        MapperSetup.CreateMap<UserWithAttributes, UserWithAttributesDto>();
         
         // Simple mappings
-        Configuration.CreateMap<SimpleSource, SimpleDestination>();
+        MapperSetup.CreateMap<SimpleSource, SimpleDestination>();
     }
 }

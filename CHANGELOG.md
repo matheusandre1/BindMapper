@@ -6,14 +6,22 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **BREAKING**: Moved `CreateMap` from `Mapper` to `Configuration` class to avoid naming conflicts
-  - Old: `Mapper.CreateMap<User, UserDto>()`
-  - New: `Configuration.CreateMap<User, UserDto>()`
-- Updated all internal APIs to use `Configuration` for setup
+- **BREAKING**: Moved `CreateMap` from `Mapper` to `MapperSetup` class to avoid naming conflicts
+  - Old: `Configuration.CreateMap<User, UserDto>()`
+  - New: `MapperSetup.CreateMap<User, UserDto>()`
+- Renamed `Configuration` class to `MapperSetup` for better clarity and less chance of conflicts with .NET built-in types
+- Updated all internal APIs to use `MapperSetup` for setup
 
 ### Why This Change?
 
-This prevents conflicts when users have their own `Mapper` class in their projects. The `Mapper` class is now exclusively for mapping operations (`To<T>()`, `ToList<T>()`, etc.), while `Configuration` is exclusively for setup (`CreateMap<T, U>()`).
+`MapperSetup` is more specific and avoids conflicts with:
+- `System.Configuration.Configuration`
+- `Microsoft.Extensions.Configuration`
+- Other common configuration classes in .NET
+
+The API is now clearer:
+- **MapperSetup**: for configuration (CreateMap)
+- **Mapper**: for mapping operations (To, ToList, ToArray, etc.)
 
 ### Migration from 1.1.1
 
@@ -23,7 +31,7 @@ Mapper.CreateMap<User, UserDto>();
 var dto = Mapper.To<UserDto>(user);
 
 // After (v1.1.2)
-Configuration.CreateMap<User, UserDto>();
+MapperSetup.CreateMap<User, UserDto>();
 var dto = Mapper.To<UserDto>(user);  // Mapping stays the same!
 ```
 

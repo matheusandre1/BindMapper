@@ -212,8 +212,8 @@ public static class MapperConfig
     [MapperConfiguration]
     public static void Configure()
     {
-        Configuration.CreateMap<Person, PersonDto>();
-        Configuration.CreateMap<Address, AddressDto>();
+        MapperSetup.CreateMap<Person, PersonDto>();
+        MapperSetup.CreateMap<Address, AddressDto>();
     }
 }
 

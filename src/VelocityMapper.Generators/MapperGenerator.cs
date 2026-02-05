@@ -268,6 +268,7 @@ public sealed class MapperGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("namespace VelocityMapper;");
         sb.AppendLine();
+        sb.AppendLine("/// <summary>Auto-generated mapping methods.</summary>");
         sb.AppendLine("public static partial class Mapper");
         sb.AppendLine("{");
 

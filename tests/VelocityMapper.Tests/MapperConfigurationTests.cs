@@ -18,7 +18,7 @@ public class MapperConfigurationTests
     public void CreateMap_ShouldReturnMapperConfiguration()
     {
         // Act
-        var config = Configuration.CreateMap<SimpleSource, SimpleDestination>();
+        var config = MapperSetup.CreateMap<SimpleSource, SimpleDestination>();
 
         // Assert
         config.Should().NotBeNull();
@@ -29,7 +29,7 @@ public class MapperConfigurationTests
     public void CreateMap_WithAction_ShouldReturnMapperConfiguration()
     {
         // Act
-        var config = Configuration.CreateMap<SimpleSource, SimpleDestination>(cfg =>
+        var config = MapperSetup.CreateMap<SimpleSource, SimpleDestination>(cfg =>
         {
             // Configuration action
         });
