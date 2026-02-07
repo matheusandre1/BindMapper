@@ -1,108 +1,115 @@
-name: Bug Report
-description: Report a bug in VelocityMapper
+name: 🐛 Bug Report
+description: Reportar um problema ou comportamento inesperado
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
+        Obrigado por reportar um bug! Por favor, preencha o formulário abaixo para nos ajudar a entender e reproduzir o problema.
   
   - type: textarea
     id: description
     attributes:
-      label: Description
-      description: A clear and concise description of what the bug is.
-      placeholder: Tell us what happened
+      label: Descrição do Bug
+      description: Uma descrição clara e concisa do que é o bug.
+      placeholder: Quando eu faço X, esperava Y, mas acontece Z...
     validations:
       required: true
   
   - type: textarea
     id: reproduction
     attributes:
-      label: Steps to Reproduce
-      description: Steps to reproduce the behavior
+      label: Passos para Reproduzir
+      description: Como podemos reproduzir o problema?
       placeholder: |
-        1. Create mapping for '...'
-        2. Call Mapper.Map '....'
-        3. See error
+        1. Configure o mapper com...
+        2. Chame o método...
+        3. Observe o erro...
     validations:
       required: true
   
   - type: textarea
     id: expected
     attributes:
-      label: Expected Behavior
-      description: What you expected to happen
-      placeholder: The mapping should...
+      label: Comportamento Esperado
+      description: O que você esperava que acontecesse?
     validations:
       required: true
   
   - type: textarea
     id: actual
     attributes:
-      label: Actual Behavior
-      description: What actually happened
-      placeholder: Instead it...
+      label: Comportamento Atual
+      description: O que realmente aconteceu?
     validations:
       required: true
   
   - type: textarea
     id: code
     attributes:
-      label: Code Sample
-      description: Minimal code to reproduce the issue
+      label: Código de Exemplo
+      description: Se possível, forneça um exemplo mínimo de código que reproduz o problema
       render: csharp
       placeholder: |
-        [MapperConfiguration]
-        public static void Configure()
-        {
-            Mapper.CreateMap<Source, Dest>();
-        }
+        public class Source { public string Name { get; set; } }
+        public class Dest { public string Name { get; set; } }
+        
+        var mapper = new Mapper();
+        var result = mapper.Map<Source, Dest>(source);
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Mensagem de Erro
+      description: Cole a mensagem de erro completa, stack trace, ou compilation errors
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão do BindMapper
+      description: Qual versão do BindMapper você está usando?
+      placeholder: ex. 1.1.2
     validations:
-      required: false
-  
+      required: true
+
   - type: dropdown
     id: dotnet-version
     attributes:
-      label: .NET Version
-      description: Which .NET version are you using?
+      label: Versão do .NET
+      description: Qual versão do .NET você está usando?
       options:
-        - .NET 6
-        - .NET 8
-        - .NET 9
-        - .NET 10
-        - Other
+        - .NET 6.0
+        - .NET 8.0
+        - .NET 9.0
+        - .NET 10.0
+        - Outro
     validations:
       required: true
-  
+
   - type: input
-    id: VelocityMapper-version
-    attributes:
-      label: VelocityMapper Version
-      description: Which version of VelocityMapper?
-      placeholder: e.g. 1.0.0
-    validations:
-      required: true
-  
-  - type: dropdown
     id: os
     attributes:
-      label: Operating System
-      options:
-        - Windows
-        - Linux
-        - macOS
-        - Other
-    validations:
-      required: true
-  
+      label: Sistema Operacional
+      description: Qual sistema operacional você está usando?
+      placeholder: ex. Windows 11, Ubuntu 22.04, macOS 13
+
   - type: textarea
     id: additional
     attributes:
-      label: Additional Context
-      description: Add any other context about the problem here
-      placeholder: Stack traces, generated code, etc.
-    validations:
-      required: false
+      label: Informações Adicionais
+      description: Qualquer outra informação relevante sobre o problema
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: Procurei por issues similares e não encontrei nenhuma
+          required: true
+        - label: Estou usando a versão mais recente do BindMapper
+          required: false
+        - label: Testei com código mínimo reproduzível
+          required: false
 
