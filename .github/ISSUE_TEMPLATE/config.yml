@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussões
+    url: https://github.com/djesusnet/BindMapper/discussions
+    about: Perguntas, ideias ou discussões gerais
+
+  - name: 📖 Documentação
+    url: https://github.com/djesusnet/BindMapper/blob/main/README.md
+    about: Leia a documentação completa
+
+  - name: ⚡ Performance Issues
+    url: https://github.com/djesusnet/BindMapper/issues/new?labels=performance&template=bug_report.yml
+    about: Reportar problemas de performance

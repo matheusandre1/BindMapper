@@ -1,0 +1,52 @@
+name: 📚 Documentation
+description: Sugestão de melhoria na documentação
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a melhorar nossa documentação!
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Tipo de Documentação
+      options:
+        - README
+        - API Reference
+        - Examples
+        - Tutorial/Guide
+        - Code Comments
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: Problema na Documentação Atual
+      description: O que está confuso, faltando, ou incorreto?
+      placeholder: A seção X não explica como...
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Sugestão de Melhoria
+      description: Como a documentação poderia ser melhorada?
+      placeholder: Poderia adicionar uma seção explicando...
+
+  - type: input
+    id: location
+    attributes:
+      label: Localização
+      description: Onde está o problema? (URL, nome do arquivo, etc)
+      placeholder: ex. README.md linha 50
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Contexto Adicional
+      description: Qualquer outra informação relevante

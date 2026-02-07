@@ -1,0 +1,52 @@
+version: 2
+updates:
+  # Mantém as dependências do NuGet atualizadas
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "djesusnet"
+    assignees:
+      - "djesusnet"
+    groups:
+      # Agrupa atualizações de pacotes de desenvolvimento juntas
+      development-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "xunit*"
+          - "coverlet*"
+          - "Microsoft.NET.Test.Sdk"
+          - "BenchmarkDotNet*"
+      # Agrupa atualizações de pacotes de produção juntas
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Mantém as GitHub Actions atualizadas
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+    reviewers:
+      - "djesusnet"
+    assignees:
+      - "djesusnet"
