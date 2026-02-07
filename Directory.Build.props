@@ -6,11 +6,11 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Authors>Daniel Jesus</Authors>
-    <Company>VelocityMapper</Company>
+    <Company>BindMapper</Company>
     <Copyright>Copyright © 2026 Daniel Jesus</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/djesusnet/VelocityMapper</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/djesusnet/VelocityMapper</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/djesusnet/BindMapper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/djesusnet/BindMapper</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>mapper;mapping;object-mapper;performance;source-generator;zero-allocation</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
