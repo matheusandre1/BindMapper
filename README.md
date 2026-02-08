@@ -97,25 +97,16 @@ AppMapperConfig.EnsureConfigured();
 
 var user = new User { Id = 1, Name = "John", Email = "john@email.com" };
 
-// ⚡ Single object mapping (100% Source Generator-driven)
+// ⚡ Single object mapping
 var dto = Mapper.To<UserDto>(user);
 
-// ⚡ Collection mapping - All methods below are generated at compile-time
-var users = new List<User> { user };
-
-var listDto = Mapper.ToList<UserDto>(users);           // → List<UserDto>
-var arrayDto = Mapper.ToArray<UserDto>(users);         // → UserDto[]
-var enumerableDto = Mapper.ToEnumerable<UserDto>(users); // → IEnumerable<UserDto>
-var collectionDto = Mapper.ToCollection<UserDto>(users); // → Collection<UserDto>
-
-// ⚡ Zero-allocation Span mapping (ultra-high performance)
-Span<UserDto> spanDto = stackalloc UserDto[users.Count];
-Mapper.ToSpan(CollectionsMarshal.AsSpan(users), spanDto);
-
-Console.WriteLine($"UserDto: Id={dto.Id}, Name={dto.Name}, Email={dto.Email}");
+// ⚡ Collection mapping
+Mapper.ToList<UserDto>(new List<User> { user });
+Mapper.ToArray<UserDto>(new User[] { user });
+Mapper.ToEnumerable<UserDto>(new List<User> { user });
+Mapper.ToCollection<UserDto>(new List<User> { user });
+Mapper.ToSpan<UserDto>(new User[] { user });
 ```
-
-> **💡 Pro Tip:** All 6 mapping methods (`To`, `ToList`, `ToArray`, `ToEnumerable`, `ToCollection`, `ToSpan`) are **100% generated at compile-time**. Zero reflection, zero runtime cost.
 
 ---
 
