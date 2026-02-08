@@ -144,7 +144,7 @@ var dto2 = Mapper.To<UserDto>(user);
 
 BindMapper provides optimized APIs for mapping collections. All methods use `Span<T>` optimization on .NET 8+ for maximum performance.
 
-#### Basic Collection Mapping
+#### Main Collection APIs
 
 ```csharp
 var users = new List<User> { user1, user2, user3 };
@@ -167,37 +167,33 @@ var enumerableDto = Mapper.ToEnumerable<UserDto>(enumerable);
 
 ---
 
-#### Advanced: Collection<T> Mapping
+## ⚡ Advanced Scenarios
 
-For data binding scenarios (WPF, MAUI):
+### Collection<T> Mapping
+
+For data binding scenarios (WPF, MAUI) that require `Collection<T>` type:
 
 ```csharp
+// Note: Requires explicit mapper function
 var userCollection = new Collection<User> { user1, user2, user3 };
-
-// Maps Collection → Collection
 var dtoCollection = Mapper.ToCollection(userCollection, x => Mapper.To<UserDto>(x));
 ```
 
-**Use case:** Data binding, WPF/MAUI applications, when you need Collection<T> type
+### Span Mapping (Zero Allocation)
 
----
-
-#### Advanced: Span Mapping (Zero Allocation)
-
-For performance-critical scenarios:
+For performance-critical scenarios where you need true zero-heap-allocation:
 
 ```csharp
 var users = new User[] { user1, user2, user3 };
 Span<UserDto> destination = stackalloc UserDto[users.Length];
 
-// TRUE zero allocation — only stack memory
+// Note: Requires explicit mapper function and pre-allocated destination
 Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
 ```
 
-⚠️ **Warning:** Destination Span must be pre-allocated and large enough. Don't allocate large spans (>1KB) on the stack.
+⚠️ **Warning:** Don't allocate large spans (>1KB) on the stack.
 
-**Performance:** ⚡⚡⚡ Fastest — true zero heap allocation  
-**Use case:** Performance-critical loops, fixed-size batches
+**Performance:** ⚡⚡⚡ Fastest — true zero heap allocation
 
 ---
 
@@ -206,15 +202,16 @@ Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
 The following methods are still supported for backward compatibility:
 
 ```csharp
-// Legacy APIs with explicit mapper function
-Mapper.MapToList(users, user => Mapper.To<UserDto>(user));
-Mapper.MapToArray(users, user => Mapper.To<UserDto>(user));
-Mapper.ToCollection(users, user => Mapper.To<UserDto>(user));
-
-// ✅ Prefer the simpler APIs above for new code
-```
+// Legacy APIs with explicit mapper function (still work but verbose)
 ICollection<User> users = GetUsers();
-var dtos = Mapper.MapToArray(users, user => Mapper.To<UserDto>(user));
+
+var listDto = Mapper.MapToList(users, user => Mapper.To<UserDto>(user));
+var arrayDto = Mapper.MapToArray(users, user => Mapper.To<UserDto>(user));
+var collectionDto = Mapper.ToCollection(users, user => Mapper.To<UserDto>(user));
+
+// ✅ Modern API (recommended - simpler and cleaner)
+var modernList = Mapper.ToList<UserDto>(users);
+var modernArray = Mapper.ToArray<UserDto>(users);
 ```
 
 ---
@@ -356,12 +353,13 @@ AutoMapper             37.854 ns   120 B       3.22
 Mapper.To(source, existingDto);  // 0 bytes
 
 // ⚡ Minimal allocation for collections
-Mapper.MapArray(users, x => Mapper.To<UserDto>(x));
-// Only allocates: new array + DTOs (expected)
+Mapper.ToList<UserDto>(users);
+Mapper.ToArray<UserDto>(users);
+// Only allocates: new collection + DTOs (expected)
 
-// ⚡⚡⚡ TRUE zero allocation
+// ⚡⚡⚡ TRUE zero allocation (advanced)
 Span<UserDto> dest = stackalloc UserDto[100];
-Mapper.MapSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
+Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
 // Stack memory only, no heap allocation
 ```
 
