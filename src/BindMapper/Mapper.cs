@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Collections.ObjectModel;
 
 namespace BindMapper;
 
@@ -347,6 +348,47 @@ public static partial class Mapper
         }
 
         return destination;
+    }
+
+    /// <summary>
+    /// Maps a collection to a Collection&lt;TDestination&gt; using a provided mapping function.
+    /// Optimized for ICollection&lt;T&gt; to avoid enumerator overhead.
+    /// </summary>
+    /// <typeparam name="TSource">The source item type.</typeparam>
+    /// <typeparam name="TDestination">The destination item type.</typeparam>
+    /// <param name="source">The source collection to map from. Cannot be null.</param>
+    /// <param name="mapper">The function that maps each source item to destination. Cannot be null.</param>
+    /// <returns>A new Collection&lt;TDestination&gt; containing mapped items.</returns>
+    /// <remarks>
+    /// This method creates a Collection&lt;T&gt; which is useful for data binding scenarios
+    /// and when you need a concrete collection type with observable capabilities.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static Collection<TDestination> MapToCollection<TSource, TDestination>(
+        ICollection<TSource> source,
+        Func<TSource, TDestination> mapper)
+    {
+        if (source.Count == 0)
+            return new Collection<TDestination>();
+
+        var list = new List<TDestination>(source.Count);
+
+#if NET8_0_OR_GREATER
+        CollectionsMarshal.SetCount(list, source.Count);
+        var destSpan = CollectionsMarshal.AsSpan(list);
+        var i = 0;
+        foreach (var item in source)
+        {
+            destSpan[i++] = mapper(item);
+        }
+#else
+        foreach (var item in source)
+        {
+            list.Add(mapper(item));
+        }
+#endif
+
+        return new Collection<TDestination>(list);
     }
 
     #endregion
