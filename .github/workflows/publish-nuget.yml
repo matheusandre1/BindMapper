@@ -11,6 +11,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   publish:
     name: Build and Publish to NuGet
@@ -73,12 +77,10 @@ jobs:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: ncipollo/release-action@v1
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release v${{ steps.get_version.outputs.version }}
+        tag: ${{ github.ref_name }}
+        name: Release v${{ steps.get_version.outputs.version }}
         body: |
           ## BindMapper v${{ steps.get_version.outputs.version }}
           
@@ -94,8 +96,10 @@ jobs:
           Package is available on [NuGet.org](https://www.nuget.org/packages/BindMapper/${{ steps.get_version.outputs.version }})
         draft: false
         prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+        artifacts: "./artifacts/*.nupkg"
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload package to release
+    - name: Upload package artifact
       uses: actions/upload-artifact@v4
       with:
         name: nuget-package-v${{ steps.get_version.outputs.version }}
