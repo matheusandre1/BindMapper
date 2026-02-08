@@ -40,6 +40,7 @@ internal sealed class MapperCodeGenerator
         _sb.AppendLine("#nullable enable");
         _sb.AppendLine("using System;");
         _sb.AppendLine("using System.Collections.Generic;");
+        _sb.AppendLine("using System.Collections.ObjectModel;");
         _sb.AppendLine("using System.Runtime.CompilerServices;");
         _sb.AppendLine("using System.Runtime.InteropServices;");
         _sb.AppendLine();
@@ -225,6 +226,7 @@ internal sealed class MapperCodeGenerator
                 AppendToListMethod(mapping);
                 AppendToArrayMethod(mapping);
                 AppendToEnumerableMethod(mapping);
+                AppendToCollectionMethod(mapping);
                 AppendToSpanMethod(mapping);
             }
             else
@@ -405,6 +407,19 @@ internal sealed class MapperCodeGenerator
         _sb.AppendLine("        if (source is null) yield break;");
         _sb.AppendLine("        foreach (var item in source)");
         _sb.AppendLine($"            yield return (TDestination)(object)To(item)!;");
+        _sb.AppendLine("    }");
+    }
+
+    private void AppendToCollectionMethod(MappingConfiguration mapping)
+    {
+        _sb.AppendLine();
+        _sb.AppendLine($"    /// <summary>Maps IEnumerable of {mapping.SourceTypeName} to Collection of {mapping.DestinationTypeName}.</summary>");
+        _sb.AppendLine("    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]");
+        _sb.AppendLine($"    public static Collection<TDestination> ToCollection<TDestination>(IEnumerable<{mapping.SourceType}>? source) where TDestination : {mapping.DestinationType}");
+        _sb.AppendLine("    {");
+        _sb.AppendLine("        if (source is null) return new Collection<TDestination>();");
+        _sb.AppendLine("        var list = ToList<TDestination>(source);");
+        _sb.AppendLine("        return new Collection<TDestination>(list);");
         _sb.AppendLine("    }");
     }
 
