@@ -110,16 +110,10 @@ var arrayDto = Mapper.ToArray<UserDto>(new User[] { user });
 // ⚡ Enumerable mapping
 var enumerableDto = Mapper.ToEnumerable<UserDto>(users);
 
-// ⚡ Collection mapping
-var userCollection = new Collection<User> { user };
-var collectionDto = Mapper.ToCollection(userCollection, x => Mapper.To<UserDto>(x));
-
-// ⚡ Span mapping (zero heap allocation)
-Span<UserDto> dest = stackalloc UserDto[100];
-Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
-
 Console.WriteLine($"UserDto: Id={dto.Id}, Name={dto.Name}, Email={dto.Email}");
 ```
+
+> **💡 Pro Tip:** For advanced scenarios, see [Complete API Reference](#-complete-api-reference) below for Collection mapping, Span mapping, and more.
 
 ---
 
@@ -148,83 +142,34 @@ var dto2 = Mapper.To<UserDto>(user);
 
 ### Collection Mapping
 
-BindMapper provides **multiple APIs** for different scenarios. All are optimized with `Span<T>` on .NET 8+.
+BindMapper provides optimized APIs for mapping collections. All methods use `Span<T>` optimization on .NET 8+ for maximum performance.
 
-#### `ToList<TDestination>(IEnumerable<T>)` — To List
+#### Basic Collection Mapping
 
 ```csharp
 var users = new List<User> { user1, user2, user3 };
 
-// Maps List → List using Span optimization on .NET 8+
-var dtos = Mapper.ToList<UserDto>(users);
+// Map to List (most common)
+var listDto = Mapper.ToList<UserDto>(users);
+
+// Map to Array
+var arrayDto = Mapper.ToArray<UserDto>(users);
+
+// Map any IEnumerable (auto-optimized based on source type)
+IEnumerable<User> enumerable = users;
+var enumerableDto = Mapper.ToEnumerable<UserDto>(enumerable);
 ```
 
 **Performance:**
-- .NET 8+: Uses `CollectionsMarshal.AsSpan()` for zero-allocation enumeration
-- .NET 6-7: Uses standard foreach
-- **Time:** ~1.2 μs for 100 items
+- ~1.2 μs for 100 items on .NET 8+ (with Span optimization)
+- ~1.4 μs for 100 items on .NET 6-7
+- Near-zero allocation enumeration on .NET 8+
 
 ---
 
-#### `ToArray<TDestination>(IEnumerable<T>)` — To Array
+#### Advanced: Collection<T> Mapping
 
-```csharp
-User[] users = new User[] { user1, user2, user3 };
-
-// Maps Array → Array using Span
-var dtos = Mapper.ToArray<UserDto>(users);
-```
-
-**Performance:**
-- Uses `Span<T>` directly for zero-copy iteration
-- **Time:** ~1.3 μs for 100 items
-
----
-
-#### `ToEnumerable<TDestination>(IEnumerable<T>)` — Auto-Detection
-
-Intelligently detects source type and chooses the fastest path:
-
-```csharp
-IEnumerable<User> users = GetUsers(); // Could be List, Array, or any IEnumerable
-
-// Source Generator picks the best path:
-// - List<T> → uses optimized List mapping (Span-optimized)
-// - T[] → uses optimized Array mapping (Span-optimized)
-// - ICollection<T> → uses optimized enumeration
-// - IEnumerable<T> → fallback with foreach
-var dtos = Mapper.ToEnumerable<UserDto>(users);
-```
-
-**Performance:** Variable, but auto-optimized
-- List/Array: ~1.2-1.3 μs for 100 items
-- Generic IEnumerable: ~2.0 μs for 100 items
-
----
-
-#### `ToSpan<TSource, TDestination>(ReadOnlySpan<T>, Func)` — Maximum Performance
-
-**WARNING**: Destination Span must be pre-allocated and large enough!
-
-```csharp
-var users = new User[] { user1, user2, user3 };
-Span<UserDto> destination = stackalloc UserDto[users.Length];
-
-// TRUE zero allocation — only stack memory
-Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
-
-// ⚠️ DO NOT do this:
-// Span<UserDto> buffer = stackalloc UserDto[1000]; // Stack overflow risk!
-```
-
-**Performance:** ⚡⚡⚡ Fastest — true zero heap allocation
-**Use case:** Performance-critical loops, fixed-size batches
-
----
-
-#### `ToCollection<TSource, TDestination>(ICollection<T>, Func)` — To Collection
-
-Maps to `Collection<TDestination>` which is useful for data binding and observable scenarios.
+For data binding scenarios (WPF, MAUI):
 
 ```csharp
 var userCollection = new Collection<User> { user1, user2, user3 };
@@ -233,31 +178,41 @@ var userCollection = new Collection<User> { user1, user2, user3 };
 var dtoCollection = Mapper.ToCollection(userCollection, x => Mapper.To<UserDto>(x));
 ```
 
-**Performance:**
-- .NET 8+: Uses `CollectionsMarshal` for optimized enumeration
-- Returns `Collection<TDestination>` backed by optimized List
-- **Time:** ~1.2 μs for 100 items
-
 **Use case:** Data binding, WPF/MAUI applications, when you need Collection<T> type
 
 ---
 
-#### `MapToList<TSource, TDestination>(ICollection<T>, Func)` — Legacy API
+#### Advanced: Span Mapping (Zero Allocation)
 
-Still available for compatibility. **Prefer `MapList` or `MapEnumerable`** for new code.
+For performance-critical scenarios:
 
 ```csharp
-ICollection<User> users = GetUsers();
-var dtos = Mapper.MapToList(users, user => Mapper.To<UserDto>(user));
+var users = new User[] { user1, user2, user3 };
+Span<UserDto> destination = stackalloc UserDto[users.Length];
+
+// TRUE zero allocation — only stack memory
+Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
 ```
+
+⚠️ **Warning:** Destination Span must be pre-allocated and large enough. Don't allocate large spans (>1KB) on the stack.
+
+**Performance:** ⚡⚡⚡ Fastest — true zero heap allocation  
+**Use case:** Performance-critical loops, fixed-size batches
 
 ---
 
-#### `MapToArray<TSource, TDestination>(ICollection<T>, Func)` — Legacy API
+### Legacy APIs
 
-Still available for compatibility. **Prefer `MapArray` or `MapEnumerable`** for new code.
+The following methods are still supported for backward compatibility:
 
 ```csharp
+// Legacy APIs with explicit mapper function
+Mapper.MapToList(users, user => Mapper.To<UserDto>(user));
+Mapper.MapToArray(users, user => Mapper.To<UserDto>(user));
+Mapper.ToCollection(users, user => Mapper.To<UserDto>(user));
+
+// ✅ Prefer the simpler APIs above for new code
+```
 ICollection<User> users = GetUsers();
 var dtos = Mapper.MapToArray(users, user => Mapper.To<UserDto>(user));
 ```
@@ -701,10 +656,10 @@ public void Configure() { }
 ### Issue: Mapping is slow
 
 **Possible causes**:
-1. Using `MapEnumerable` with large `IEnumerable` (generic path)
-   - **Solution**: Use `MapList` or `MapArray` if possible
+1. Using `ToEnumerable` with large `IEnumerable` without known count
+   - **Solution**: Use `ToList` or `ToArray` with concrete collection types
 2. Calling `Mapper.To()` in nested foreach loops
-   - **Solution**: Use `MapList()` or `MapArray()` on outer collection first
+   - **Solution**: Use `ToList()` or `ToArray()` on the outer collection first
 3. Using `ReverseMap()` excessively
    - **Solution**: Create separate forward and reverse mappings if needed
 
@@ -722,8 +677,8 @@ var dto = Mapper.To<UserDto>(null);
 // ✅ Check for null first
 var dto = user != null ? Mapper.To<UserDto>(user) : null;
 
-// ✅ Or use null-coalescing in collection mapping
-var dtos = Mapper.MapList(users, u => u != null ? Mapper.To<UserDto>(u) : null);
+// ✅ Or handle null in collection mapping
+var dtos = users.Where(u => u != null).Select(u => Mapper.To<UserDto>(u)).ToList();
 ```
 
 ---
