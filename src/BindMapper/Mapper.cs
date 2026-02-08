@@ -364,7 +364,7 @@ public static partial class Mapper
     /// and when you need a concrete collection type with observable capabilities.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static Collection<TDestination> MapToCollection<TSource, TDestination>(
+    public static Collection<TDestination> ToCollection<TSource, TDestination>(
         ICollection<TSource> source,
         Func<TSource, TDestination> mapper)
     {

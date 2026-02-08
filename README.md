@@ -112,7 +112,7 @@ var enumerableDto = Mapper.ToEnumerable<UserDto>(users);
 
 // ⚡ Collection mapping
 var userCollection = new Collection<User> { user };
-var collectionDto = Mapper.MapToCollection(userCollection, x => Mapper.To<UserDto>(x));
+var collectionDto = Mapper.ToCollection(userCollection, x => Mapper.To<UserDto>(x));
 
 // ⚡ Span mapping (zero heap allocation)
 Span<UserDto> dest = stackalloc UserDto[100];
@@ -222,7 +222,7 @@ Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
 
 ---
 
-#### `MapToCollection<TSource, TDestination>(ICollection<T>, Func)` — To Collection
+#### `ToCollection<TSource, TDestination>(ICollection<T>, Func)` — To Collection
 
 Maps to `Collection<TDestination>` which is useful for data binding and observable scenarios.
 
@@ -230,7 +230,7 @@ Maps to `Collection<TDestination>` which is useful for data binding and observab
 var userCollection = new Collection<User> { user1, user2, user3 };
 
 // Maps Collection → Collection
-var dtoCollection = Mapper.MapToCollection(userCollection, x => Mapper.To<UserDto>(x));
+var dtoCollection = Mapper.ToCollection(userCollection, x => Mapper.To<UserDto>(x));
 ```
 
 **Performance:**
