@@ -37,54 +37,84 @@ dotnet add package BindMapper
 
 ## 🚀 Quick Start
 
-### Step 1: Define Models
+### Step 1: Define Your Models
 
 ```csharp
 public class User
 {
     public int Id { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
+    public string Name { get; set; } = "";
+    public string Email { get; set; } = "";
+    public bool IsActive { get; set; }
 }
 
 public class UserDto
 {
     public int Id { get; set; }
-    public string Name { get; set; }
-    public string Email { get; set; }
+    public string Name { get; set; } = "";
+    public string Email { get; set; } = "";
 }
 ```
 
-### Step 2: Configure Mappings (Compile-Time)
+### Step 2: Configure Mappings (One-Time Setup)
 
-Create a static method decorated with `[MapperConfiguration]`. This is analyzed at compile-time **only** — the method is never executed at runtime.
+Create a configuration class with the `[MapperConfiguration]` attribute. The Source Generator analyzes this at **compile-time**.
 
 ```csharp
 using BindMapper;
 
-public class MappingConfiguration
+public static class AppMapperConfig
 {
-    /// This method is NOT executed at runtime — it's analyzed at compile-time by the Source Generator.
-    [MapperConfiguration]
-    public static void ConfigureMappings()
+    private static bool _configured;
+    private static readonly object _lock = new();
+
+    public static void EnsureConfigured()
     {
-        // Source Generator extracts these calls at compile-time
+        if (_configured) return;
+        lock (_lock)
+        {
+            if (_configured) return;
+            Configure();
+            _configured = true;
+        }
+    }
+
+    [MapperConfiguration]
+    public static void Configure()
+    {
         MapperSetup.CreateMap<User, UserDto>();
     }
 }
 ```
 
-### Step 3: Use at Runtime
+### Step 3: Use in Your Application
 
 ```csharp
+using BindMapper;
+
+// Configure once at startup
+AppMapperConfig.EnsureConfigured();
+
 var user = new User { Id = 1, Name = "John", Email = "john@email.com" };
 
-// Create new instance (⚡ 12 ns)
+// ⚡ Single object mapping
 var dto = Mapper.To<UserDto>(user);
 
-// Update existing instance — zero allocation (⚡ 10 ns)
-var existingDto = new UserDto();
-Mapper.To(user, existingDto);
+// ⚡ List mapping
+var users = new List<User> { user };
+var listDto = Mapper.ToList<UserDto>(users);
+
+// ⚡ Array mapping
+var arrayDto = Mapper.ToArray<UserDto>(new User[] { user });
+
+// ⚡ Enumerable mapping
+var enumerableDto = Mapper.ToEnumerable<UserDto>(users);
+
+// ⚡ Span mapping (zero heap allocation)
+Span<UserDto> dest = stackalloc UserDto[100];
+Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
+
+Console.WriteLine($"UserDto: Id={dto.Id}, Name={dto.Name}, Email={dto.Email}");
 ```
 
 ---
@@ -101,25 +131,28 @@ Mapper.To(user, existingDto);
 **Example:**
 
 ```csharp
-// ✅ Create new DTO
+// ✅ Create new DTO (allocates new instance)
 var userDto = Mapper.To<UserDto>(user);
 
 // ✅ Reuse existing instance (zero allocation)
 var cachedDto = new UserDto();
 Mapper.To(user, cachedDto);  // Updates cachedDto in-place
+
+// ✅ Direct mapping without lambda
+var dto2 = Mapper.To<UserDto>(user);
 ```
 
 ### Collection Mapping
 
 BindMapper provides **multiple APIs** for different scenarios. All are optimized with `Span<T>` on .NET 8+.
 
-#### `MapList<TSource, TDestination>(List<T>, Func)` — To List
+#### `ToList<TDestination>(IEnumerable<T>)` — To List
 
 ```csharp
-List<User> users = GetUsers();
+var users = new List<User> { user1, user2, user3 };
 
 // Maps List → List using Span optimization on .NET 8+
-var dtos = Mapper.MapList(users, user => Mapper.To<UserDto>(user));
+var dtos = Mapper.ToList<UserDto>(users);
 ```
 
 **Performance:**
@@ -129,13 +162,13 @@ var dtos = Mapper.MapList(users, user => Mapper.To<UserDto>(user));
 
 ---
 
-#### `MapArray<TSource, TDestination>(T[], Func)` — To Array
+#### `ToArray<TDestination>(IEnumerable<T>)` — To Array
 
 ```csharp
-User[] users = GetUsersArray();
+User[] users = new User[] { user1, user2, user3 };
 
 // Maps Array → Array using Span
-var dtos = Mapper.MapArray(users, user => Mapper.To<UserDto>(user));
+var dtos = Mapper.ToArray<UserDto>(users);
 ```
 
 **Performance:**
@@ -144,7 +177,7 @@ var dtos = Mapper.MapArray(users, user => Mapper.To<UserDto>(user));
 
 ---
 
-#### `MapEnumerable<TSource, TDestination>(IEnumerable<T>, Func)` — Auto-Detection
+#### `ToEnumerable<TDestination>(IEnumerable<T>)` — Auto-Detection
 
 Intelligently detects source type and chooses the fastest path:
 
@@ -152,11 +185,11 @@ Intelligently detects source type and chooses the fastest path:
 IEnumerable<User> users = GetUsers(); // Could be List, Array, or any IEnumerable
 
 // Source Generator picks the best path:
-// - List<T> → uses MapList (Span-optimized)
-// - T[] → uses MapArray (Span-optimized)
+// - List<T> → uses optimized List mapping (Span-optimized)
+// - T[] → uses optimized Array mapping (Span-optimized)
 // - ICollection<T> → uses optimized enumeration
 // - IEnumerable<T> → fallback with foreach
-var dtos = Mapper.MapEnumerable(users, user => Mapper.To<UserDto>(user));
+var dtos = Mapper.ToEnumerable<UserDto>(users);
 ```
 
 **Performance:** Variable, but auto-optimized
@@ -165,16 +198,16 @@ var dtos = Mapper.MapEnumerable(users, user => Mapper.To<UserDto>(user));
 
 ---
 
-#### `MapSpan<TSource, TDestination>(ReadOnlySpan<T>, Func)` — Maximum Performance
+#### `ToSpan<TSource, TDestination>(ReadOnlySpan<T>, Func)` — Maximum Performance
 
 **WARNING**: Destination Span must be pre-allocated and large enough!
 
 ```csharp
-ReadOnlySpan<User> users = new User[] { /* ... */ };
+var users = new User[] { user1, user2, user3 };
 Span<UserDto> destination = stackalloc UserDto[users.Length];
 
 // TRUE zero allocation — only stack memory
-Mapper.MapSpan(users, user => Mapper.To<UserDto>(user));
+Mapper.ToSpan(users.AsSpan(), x => Mapper.To<UserDto>(x));
 
 // ⚠️ DO NOT do this:
 // Span<UserDto> buffer = stackalloc UserDto[1000]; // Stack overflow risk!
