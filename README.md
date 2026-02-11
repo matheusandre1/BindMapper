@@ -5,6 +5,13 @@ It generates optimized mapping code at compile-time, eliminating reflection over
 
 The API is intentionally designed with **AutoMapper-like syntax**, while providing **compile-time safety, predictability, and speed**.
 
+[![CI](https://github.com/djesusnet/BindMapper/actions/workflows/ci.yml/badge.svg)](https://github.com/djesusnet/BindMapper/actions/workflows/ci.yml)
+[![CD](https://github.com/djesusnet/BindMapper/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/djesusnet/BindMapper/actions/workflows/publish-nuget.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![NuGet](https://img.shields.io/nuget/v/BindMapper.svg)](https://www.nuget.org/packages/BindMapper/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/BindMapper.svg)](https://www.nuget.org/packages/BindMapper/)
+[![.NET](https://img.shields.io/badge/.NET-6%20%7C%208%20%7C%209%20%7C%2010-512BD4)](https://dotnet.microsoft.com/)
+
 ---
 
 ## 🚀 Features
